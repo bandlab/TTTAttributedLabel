@@ -221,6 +221,7 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
 @property (readwrite, nonatomic, strong) NSArray *linkModels;
 @property (readwrite, nonatomic, strong) TTTAttributedLabelLink *activeLink;
 @property (readwrite, nonatomic, strong) NSArray *accessibilityElements;
+@property (nonatomic, copy) NSAttributedString *attributedTextOriginal;
 
 - (void) longPressGestureDidFire:(UILongPressGestureRecognizer *)sender;
 @end
@@ -807,9 +808,10 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                         [truncationString deleteCharactersInRange:NSMakeRange((NSUInteger)(lastLineRange.length - 1), 1)];
                     }
                 }
-                [truncationString appendAttributedString:attributedTruncationString];
-                // fix issue: truncation string is not incorrect range https://github.com/TTTAttributedLabel/TTTAttributedLabel/issues/519
+                // changes related to truncaiton token
                 truncationString = [[NSMutableAttributedString alloc] initWithAttributedString:[truncationString attributedSubstringFromRange:NSMakeRange(0, truncationString.length - attributedTruncationString.length)]];
+                //
+                [truncationString appendAttributedString:attributedTruncationString];
                 CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationString);
 
                 // Truncate the line in case it is too long.
@@ -1013,7 +1015,9 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
         [self setText:text afterInheritingLabelAttributesAndConfiguringWithBlock:nil];
         return;
     }
-
+    // changes related to truncaiton token
+    self.attributedTextOriginal = text;
+    //
     self.attributedText = text;
     self.activeLink = nil;
 
@@ -1439,7 +1443,12 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
         
         NSTextCheckingResult *result = self.activeLink.result;
         self.activeLink = nil;
-
+        // changes related to truncaiton token
+        NSAttributedString *attributedTruncationString = self.attributedTruncationToken;
+        if (attributedTruncationString) {
+            [self setAttributedText:self.attributedTextOriginal];
+        }
+        //
         switch (result.resultType) {
             case NSTextCheckingTypeLink:
                 if ([self.delegate respondsToSelector:@selector(attributedLabel:didSelectLinkWithURL:)]) {
