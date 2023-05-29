@@ -807,14 +807,8 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                         [truncationString deleteCharactersInRange:NSMakeRange((NSUInteger)(lastLineRange.length - 1), 1)];
                     }
                 }
+                truncationString = [[truncationString attributedSubstringFromRange:NSMakeRange(0, truncationString.length - attributedTruncationString.length)] mutableCopy];
                 [truncationString appendAttributedString:attributedTruncationString];
-
-                // fix issue: truncation string is not incorrect range https://github.com/TTTAttributedLabel/TTTAttributedLabel/issues/519
-                NSMutableAttributedString *attributedText = [self.attributedText mutableCopy];
-                [attributedText appendAttributedString:attributedTruncationString];
-                self.attributedText = [attributedText copy];
-                lastLineRange = CFRangeMake(lastLineRange.location, lastLineRange.length + attributedTruncationString.length);
-
                 CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationString);
 
                 // Truncate the line in case it is too long.
