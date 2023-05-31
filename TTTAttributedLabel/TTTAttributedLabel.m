@@ -492,12 +492,8 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
 
         // Check if the link range is within the bounds of the attributed string
         if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= attributedStringLength) {
-            // Adjust the link range if it goes beyond the attributed string's length
-            if (NSMaxRange(linkRange) > attributedStringLength) {
-                linkRange.length = attributedStringLength - linkRange.location;
-            }
-
-            if (link.attributes && linkRange.length > 0 && linkRange.location != NSNotFound) {
+            // Check if the link range is valid and has a positive length
+            if (linkRange.location != NSNotFound && linkRange.length > 0) {
                 [mutableAttributedString addAttributes:link.attributes range:linkRange];
             }
         }
@@ -509,7 +505,6 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
     [mutableLinkModels addObjectsFromArray:links];
     self.linkModels = [NSArray arrayWithArray:mutableLinkModels];
 }
-
 
 - (TTTAttributedLabelLink *)addLinkWithTextCheckingResult:(NSTextCheckingResult *)result
                                                attributes:(NSDictionary *)attributes
