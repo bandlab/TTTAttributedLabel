@@ -487,8 +487,10 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
 
     for (TTTAttributedLabelLink *link in links) {
-        if (link.attributes) {
-            [mutableAttributedString addAttributes:link.attributes range:link.result.range];
+        if (link.result.range.location != NSNotFound && NSMaxRange(link.result.range) <= mutableAttributedString.length) {
+            if (link.attributes) {
+                [mutableAttributedString addAttributes:link.attributes range:link.result.range];
+            }
         }
     }
 
