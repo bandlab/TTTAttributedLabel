@@ -808,11 +808,17 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                         [truncationString deleteCharactersInRange:NSMakeRange((NSUInteger)(lastLineRange.length - 1), 1)];
                     }
                 }
-                [truncationString appendAttributedString:attributedTruncationString];
-                // changes related to truncaiton token
-                truncationString = [[NSMutableAttributedString alloc] initWithAttributedString:[truncationString attributedSubstringFromRange:NSMakeRange(0, truncationString.length - attributedTruncationString.length)]];
-                //
-                CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationString);
+
+                NSMutableAttributedString *mutableTruncationString = [truncationString mutableCopy];
+
+                // Remove the truncation token from mutableTruncationString
+                if ([mutableTruncationString length] > [attributedTruncationString length]) {
+                    NSRange truncationTokenRange = NSMakeRange([mutableTruncationString length] - [attributedTruncationString length], [attributedTruncationString length]);
+                    [mutableTruncationString deleteCharactersInRange:truncationTokenRange];
+                }
+
+                [mutableTruncationString appendAttributedString:attributedTruncationString];
+                CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)mutableTruncationString);
 
                 // Truncate the line in case it is too long.
                 CTLineRef truncatedLine = CTLineCreateTruncatedLine(truncationLine, rect.size.width, truncationType, truncationToken);
