@@ -496,9 +496,10 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
             if (NSMaxRange(linkRange) > attributedStringLength) {
                 linkRange.length = attributedStringLength - linkRange.location;
             }
-
             if (link.attributes) {
-                [mutableAttributedString addAttributes:link.attributes range:linkRange];
+                if (linkRange.length > 0) {  // Check if the range length is greater than 0
+                    [mutableAttributedString addAttributes:link.attributes range:linkRange];
+                }
             }
         }
     }
