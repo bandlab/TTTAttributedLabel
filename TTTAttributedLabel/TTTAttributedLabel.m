@@ -483,13 +483,22 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
 
 - (void)addLinks:(NSArray *)links {
     NSMutableArray *mutableLinkModels = [NSMutableArray arrayWithArray:self.linkModels];
-
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
 
+    NSUInteger attributedStringLength = mutableAttributedString.length;
+
     for (TTTAttributedLabelLink *link in links) {
-        if (link.result.range.location != NSNotFound && NSMaxRange(link.result.range) <= mutableAttributedString.length) {
+        NSRange linkRange = link.result.range;
+
+        // Check if the link range is within the bounds of the attributed string
+        if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= attributedStringLength) {
+            // Adjust the link range if it goes beyond the attributed string's length
+            if (NSMaxRange(linkRange) > attributedStringLength) {
+                linkRange.length = attributedStringLength - linkRange.location;
+            }
+
             if (link.attributes) {
-                [mutableAttributedString addAttributes:link.attributes range:link.result.range];
+                [mutableAttributedString addAttributes:link.attributes range:linkRange];
             }
         }
     }
@@ -498,7 +507,6 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
     [self setNeedsDisplay];
 
     [mutableLinkModels addObjectsFromArray:links];
-
     self.linkModels = [NSArray arrayWithArray:mutableLinkModels];
 }
 
