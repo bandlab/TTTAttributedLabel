@@ -484,7 +484,6 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
 - (void)addLinks:(NSArray *)links {
     NSMutableArray *mutableLinkModels = [NSMutableArray arrayWithArray:self.linkModels];
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
-
     NSUInteger attributedStringLength = mutableAttributedString.length;
 
     for (TTTAttributedLabelLink *link in links) {
@@ -492,9 +491,17 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
 
         // Check if the link range is within the bounds of the attributed string
         if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= attributedStringLength) {
-            // Check if the link range is valid and has a positive length
-            if (linkRange.location != NSNotFound && linkRange.length > 0) {
-                [mutableAttributedString addAttributes:link.attributes range:linkRange];
+            // Adjust the link range if it goes beyond the attributed string's length
+            if (NSMaxRange(linkRange) > attributedStringLength) {
+                linkRange.length = attributedStringLength - linkRange.location;
+            }
+
+            if (link.attributes && linkRange.length > 0) {
+                // Ensure the range length is greater than 0 before adding attributes
+                NSRange intersectedRange = NSIntersectionRange(linkRange, NSMakeRange(0, attributedStringLength));
+                if (intersectedRange.length > 0) {
+                    [mutableAttributedString addAttributes:link.attributes range:intersectedRange];
+                }
             }
         }
     }
