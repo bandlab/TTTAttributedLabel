@@ -787,6 +787,7 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                 if (!attributedTruncationString) {
                     NSString *truncationTokenString = @"\u2026"; // Unicode Character 'HORIZONTAL ELLIPSIS' (U+2026)
                     NSDictionary *truncationTokenStringAttributes = truncationTokenStringAttributes = [attributedString attributesAtIndex:(NSUInteger)truncationAttributePosition effectiveRange:NULL];
+
                     attributedTruncationString = [[NSAttributedString alloc] initWithString:truncationTokenString attributes:truncationTokenStringAttributes];
                 }
                 CTLineRef truncationToken = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)attributedTruncationString);
@@ -806,14 +807,9 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                         [truncationString deleteCharactersInRange:NSMakeRange((NSUInteger)(lastLineRange.length - 1), 1)];
                     }
                 }
-                NSMutableAttributedString *mutableTruncationString = [truncationString mutableCopy];
-                // Remove the truncation token from mutableTruncationString
-                if ([mutableTruncationString length] > [attributedTruncationString length]) {
-                    NSRange truncationTokenRange = NSMakeRange([mutableTruncationString length] - [attributedTruncationString length], [attributedTruncationString length]);
-                    [mutableTruncationString deleteCharactersInRange:truncationTokenRange];
-                }
-                [mutableTruncationString appendAttributedString:attributedTruncationString];
-                CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)mutableTruncationString);
+                truncationString = [truncationString attributedSubstringFromRange:NSMakeRange(0, truncationString.length - attributedTruncationString.length)];//ADD THIS LINE
+                [truncationString appendAttributedString:attributedTruncationString];
+                CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationString);
 
                 // Truncate the line in case it is too long.
                 CTLineRef truncatedLine = CTLineCreateTruncatedLine(truncationLine, rect.size.width, truncationType, truncationToken);
@@ -826,9 +822,10 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                 CGContextSetTextPosition(c, penOffset, lineOrigin.y - descent - self.font.descender);
 
                 CTLineDraw(truncatedLine, c);
+
                 NSRange linkRange;
                 if ([attributedTruncationString attribute:NSLinkAttributeName atIndex:0 effectiveRange:&linkRange]) {
-                    NSRange tokenRange = [mutableTruncationString.string rangeOfString:attributedTruncationString.string];
+                    NSRange tokenRange = [truncationString.string rangeOfString:attributedTruncationString.string];
                     NSRange tokenLinkRange = NSMakeRange((NSUInteger)(lastLineRange.location+lastLineRange.length)-tokenRange.length, (NSUInteger)tokenRange.length);
 
                     [self addLinkToURL:[attributedTruncationString attribute:NSLinkAttributeName atIndex:0 effectiveRange:&linkRange] withRange:tokenLinkRange];
@@ -840,19 +837,19 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
             } else {
                 CGFloat penOffset = (CGFloat)CTLineGetPenOffsetForFlush(line, flushFactor, rect.size.width);
                 CGContextSetTextPosition(c, penOffset, lineOrigin.y - descent - self.font.descender);
-
                 CTLineDraw(line, c);
             }
         } else {
             CGFloat penOffset = (CGFloat)CTLineGetPenOffsetForFlush(line, flushFactor, rect.size.width);
             CGContextSetTextPosition(c, penOffset, lineOrigin.y - descent - self.font.descender);
-
             CTLineDraw(line, c);
         }
     }
 
+    [self drawStrike:frame inRect:rect context:c];
+
     CFRelease(frame);
-    CFRelease(path);
+    CGPathRelease(path);
 }
 
 
