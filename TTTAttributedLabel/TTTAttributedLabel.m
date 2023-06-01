@@ -1373,28 +1373,34 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
     BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
+
     for (TTTAttributedLabelLink *link in self.linkModels) {
+        NSRange linkRange = link.result.range;
+        if (NSMaxRange(linkRange) > mutableAttributedString.length) {
+            continue; // Skip links with invalid ranges
+        }
+
         NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
         NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
 
-        NSRange linkRange = link.result.range;
-
-        // Check if the link range is valid
-        if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
-            [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                [mutableAttributedString removeAttribute:name range:linkRange];
-            }];
-
-            if (attributesToAdd) {
-                [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
-            }
+        // Create a new attributed string with modified attributes
+        NSMutableAttributedString *modifiedString = [[NSMutableAttributedString alloc] initWithAttributedString:[mutableAttributedString attributedSubstringFromRange:linkRange]];
+        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+            [modifiedString removeAttribute:name range:NSMakeRange(0, modifiedString.length)];
+        }];
+        if (attributesToAdd) {
+            [modifiedString addAttributes:attributesToAdd range:NSMakeRange(0, modifiedString.length)];
         }
+
+        // Replace the original link range with the modified attributed string
+        [mutableAttributedString replaceCharactersInRange:linkRange withAttributedString:modifiedString];
     }
 
     self.attributedText = mutableAttributedString;
 
     [self setNeedsDisplay];
 }
+
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
