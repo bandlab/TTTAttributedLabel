@@ -1366,8 +1366,6 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 }
 
 - (void)tintColorDidChange {
-    [super tintColorDidChange];
-
     if (!self.inactiveLinkAttributes || [self.inactiveLinkAttributes count] == 0) {
         return;
     }
@@ -1376,21 +1374,30 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
 
-    [self.linkModels enumerateObjectsUsingBlock:^(TTTAttributedLabelLink *link, NSUInteger idx, BOOL *stop) {
-        NSRange linkRange = link.result.range;
+    for (NSUInteger idx = 0; idx < self.linkModels.count; idx++) {
+        TTTAttributedLabelLink *link = self.linkModels[idx];
 
-        if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
-            if (isInactive) {
-                [mutableAttributedString addAttributes:link.inactiveAttributes range:linkRange];
-            } else {
-                [mutableAttributedString addAttributes:link.attributes range:linkRange];
+        NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
+        NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
+
+        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+            if (NSMaxRange(link.result.range) <= mutableAttributedString.length) {
+                [mutableAttributedString removeAttribute:name range:link.result.range];
+            }
+        }];
+
+        if (attributesToAdd) {
+            if (NSMaxRange(link.result.range) <= mutableAttributedString.length) {
+                [mutableAttributedString addAttributes:attributesToAdd range:link.result.range];
             }
         }
-    }];
+    }
 
     self.attributedText = mutableAttributedString;
+
     [self setNeedsDisplay];
 }
+
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
