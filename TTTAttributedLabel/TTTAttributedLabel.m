@@ -1373,33 +1373,30 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
     BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
-
-    // Iterate over a copy of linkModels to avoid modification during iteration
-    NSArray<TTTAttributedLabelLink *> *linkModelsCopy = [self.linkModels copy];
-
-    for (TTTAttributedLabelLink *link in linkModelsCopy) {
-        NSRange linkRange = link.result.range;
-
-        if (linkRange.location == NSNotFound || NSMaxRange(linkRange) > mutableAttributedString.length) {
-            // Skip invalid link ranges
-            continue;
-        }
-
+    for (TTTAttributedLabelLink *link in self.linkModels) {
         NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
         NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
 
         [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-            [mutableAttributedString removeAttribute:name range:linkRange];
+            NSRange linkRange = link.result.range;
+            if (NSRangeIsValid(linkRange) && NSMaxRange(linkRange) <= mutableAttributedString.length) {
+                [mutableAttributedString removeAttribute:name range:linkRange];
+            }
         }];
 
         if (attributesToAdd) {
-            [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
+            NSRange linkRange = link.result.range;
+            if (NSRangeIsValid(linkRange) && NSMaxRange(linkRange) <= mutableAttributedString.length) {
+                [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
+            }
         }
     }
 
     self.attributedText = mutableAttributedString;
+
     [self setNeedsDisplay];
 }
+
 
 
 - (UIView *)hitTest:(CGPoint)point
