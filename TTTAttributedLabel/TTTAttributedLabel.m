@@ -1365,35 +1365,35 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
     return [self sizeThatFits:[super intrinsicContentSize]];
 }
 
-- (void)tintColorDidChange {
-    if (!self.inactiveLinkAttributes || [self.inactiveLinkAttributes count] == 0) {
-        return;
-    }
-
-    BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
-
-    NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
-    NSArray<TTTAttributedLabelLink *> *linkModels = [self.linkModels copy];
-
-    // Iterate over the links in reverse order to avoid index issues when removing attributes
-    for (NSInteger i = linkModels.count - 1; i >= 0; i--) {
-        TTTAttributedLabelLink *link = linkModels[i];
-        NSRange linkRange = link.result.range;
-
-        // Check if the link range is within the bounds of the mutableAttributedString
-        if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= mutableAttributedString.length) {
-            NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
-
-            [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                [mutableAttributedString removeAttribute:name range:linkRange];
-            }];
-        }
-    }
-
-    self.attributedText = mutableAttributedString;
-
-    [self setNeedsDisplay];
-}
+//- (void)tintColorDidChange {
+//    if (!self.inactiveLinkAttributes || [self.inactiveLinkAttributes count] == 0) {
+//        return;
+//    }
+//
+//    BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
+//
+//    NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
+//    NSArray<TTTAttributedLabelLink *> *linkModels = [self.linkModels copy];
+//
+//    // Iterate over the links in reverse order to avoid index issues when removing attributes
+//    for (NSInteger i = linkModels.count - 1; i >= 0; i--) {
+//        TTTAttributedLabelLink *link = linkModels[i];
+//        NSRange linkRange = link.result.range;
+//
+//        // Check if the link range is within the bounds of the mutableAttributedString
+//        if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= mutableAttributedString.length) {
+//            NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
+//
+//            [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+//                [mutableAttributedString removeAttribute:name range:linkRange];
+//            }];
+//        }
+//    }
+//
+//    self.attributedText = mutableAttributedString;
+//
+//    [self setNeedsDisplay];
+//}
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
