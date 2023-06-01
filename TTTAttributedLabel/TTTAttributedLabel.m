@@ -1376,23 +1376,21 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
 
-    for (TTTAttributedLabelLink *link in self.linkModels) {
-        NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
+    [self.linkModels enumerateObjectsUsingBlock:^(TTTAttributedLabelLink *link, NSUInteger idx, BOOL *stop) {
         NSRange linkRange = link.result.range;
 
-        if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= mutableAttributedString.length) {
-            [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
-                    [mutableAttributedString removeAttribute:name range:linkRange];
-                }
-            }];
+        if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
+            if (isInactive) {
+                [mutableAttributedString addAttributes:link.inactiveAttributes range:linkRange];
+            } else {
+                [mutableAttributedString addAttributes:link.attributes range:linkRange];
+            }
         }
-    }
+    }];
 
     self.attributedText = mutableAttributedString;
     [self setNeedsDisplay];
 }
-
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
