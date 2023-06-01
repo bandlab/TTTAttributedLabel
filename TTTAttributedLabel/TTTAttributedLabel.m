@@ -1374,30 +1374,52 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
 
-    for (NSUInteger idx = 0; idx < self.linkModels.count; idx++) {
-        TTTAttributedLabelLink *link = self.linkModels[idx];
+    BOOL hasLinks = NO;
+    for (TTTAttributedLabelLink *link in self.linkModels) {
+        if (link.result.range.location != NSNotFound) {
+            hasLinks = YES;
+            break;
+        }
+    }
 
-        NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
-        NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
+    if (!hasLinks) {
+        // Handle case when there are no links, hashtags, or URLs except the truncation token
+        NSDictionary *attributesToRemove = isInactive ? self.linkAttributes : self.inactiveLinkAttributes;
+        NSDictionary *attributesToAdd = isInactive ? self.inactiveLinkAttributes : self.linkAttributes;
+
+        NSRange range = NSMakeRange(0, mutableAttributedString.length);
 
         [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-            if (NSMaxRange(link.result.range) <= mutableAttributedString.length) {
-                [mutableAttributedString removeAttribute:name range:link.result.range];
-            }
+            [mutableAttributedString removeAttribute:name range:range];
         }];
 
         if (attributesToAdd) {
-            if (NSMaxRange(link.result.range) <= mutableAttributedString.length) {
-                [mutableAttributedString addAttributes:attributesToAdd range:link.result.range];
+            [mutableAttributedString addAttributes:attributesToAdd range:range];
+        }
+    } else {
+        for (TTTAttributedLabelLink *link in self.linkModels) {
+            NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
+            NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
+
+            if (link.result.range.location != NSNotFound) {
+                NSRange linkRange = link.result.range;
+
+                if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
+                    [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+                        [mutableAttributedString removeAttribute:name range:linkRange];
+                    }];
+
+                    if (attributesToAdd) {
+                        [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
+                    }
+                }
             }
         }
     }
 
     self.attributedText = mutableAttributedString;
-
     [self setNeedsDisplay];
 }
-
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
