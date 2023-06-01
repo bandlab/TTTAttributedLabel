@@ -1377,15 +1377,16 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
         NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
         NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
 
-        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-            if (NSMaxRange(link.result.range) <= mutableAttributedString.length) {
-                [mutableAttributedString removeAttribute:name range:link.result.range];
-            }
-        }];
+        NSRange linkRange = link.result.range;
 
-        if (attributesToAdd) {
-            if (NSMaxRange(link.result.range) <= mutableAttributedString.length) {
-                [mutableAttributedString addAttributes:attributesToAdd range:link.result.range];
+        // Check if the link range is valid
+        if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
+            [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+                [mutableAttributedString removeAttribute:name range:linkRange];
+            }];
+
+            if (attributesToAdd) {
+                [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
             }
         }
     }
