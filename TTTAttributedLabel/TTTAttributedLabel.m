@@ -1385,7 +1385,7 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
             NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
 
             [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                [mutableAttributedString removeAttribute:name range:linkRange];
+                [mutableAttributedString removeAttribute:name range:link.result.range];
             }];
         }
     }
