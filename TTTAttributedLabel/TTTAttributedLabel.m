@@ -1368,40 +1368,31 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 - (void)tintColorDidChange {
     [super tintColorDidChange];
 
-    if (!self.inactiveLinkAttributes || [self.inactiveLinkAttributes count] == 0) {
+    // Check if the tintColor is nil
+    if (!self.tintColor) {
         return;
     }
 
-    BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
-
+    // Create a mutable copy of the attributed text
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
-    NSAttributedString *truncationToken = self.attributedTruncationToken;
 
+    // Iterate over the link models
     [self.linkModels enumerateObjectsUsingBlock:^(TTTAttributedLabelLink *link, NSUInteger idx, BOOL *stop) {
         NSRange linkRange = link.result.range;
 
-        if (linkRange.location != NSNotFound) {
-            if (isInactive) {
-                [mutableAttributedString addAttributes:link.inactiveAttributes range:linkRange];
-                [mutableAttributedString removeAttribute:NSLinkAttributeName range:linkRange];
-            } else {
-                [mutableAttributedString addAttributes:link.attributes range:linkRange];
-            }
+        // Perform bounds check to ensure linkRange is within valid range
+        NSUInteger attributedStringLength = [mutableAttributedString length];
+        NSRange intersectionRange = NSIntersectionRange(linkRange, NSMakeRange(0, attributedStringLength));
+
+        if (intersectionRange.length > 0) {
+            // Add attributes to the valid range
+            [mutableAttributedString addAttributes:link.attributes range:intersectionRange];
         }
     }];
 
-    if (truncationToken) {
-        NSRange truncationTokenRange = [mutableAttributedString.string rangeOfString:truncationToken.string];
-        if (truncationTokenRange.location != NSNotFound) {
-            NSDictionary *truncationTokenAttributes = isInactive ? self.inactiveLinkAttributes : self.activeLinkAttributes;
-            [mutableAttributedString addAttributes:truncationTokenAttributes range:truncationTokenRange];
-        }
-    }
-
+    // Update the attributedText with the modified mutableAttributedString
     self.attributedText = mutableAttributedString;
-    [self setNeedsDisplay];
 }
-
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
