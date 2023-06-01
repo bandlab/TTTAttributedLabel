@@ -1374,16 +1374,16 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
 
-    BOOL hasLinks = NO;
+    BOOL hasOtherLinks = NO;
     for (TTTAttributedLabelLink *link in self.linkModels) {
-        if (link.result.range.location != NSNotFound) {
-            hasLinks = YES;
+        if (link.result.range.location != NSNotFound && link != self.attributedTruncationToken) {
+            hasOtherLinks = YES;
             break;
         }
     }
 
-    if (!hasLinks) {
-        // Handle case when there are no links, hashtags, or URLs except the truncation token
+    if (!hasOtherLinks) {
+        // Handle case when there are no other links except the truncation token
         NSDictionary *attributesToRemove = isInactive ? self.linkAttributes : self.inactiveLinkAttributes;
         NSDictionary *attributesToAdd = isInactive ? self.inactiveLinkAttributes : self.linkAttributes;
 
@@ -1404,13 +1404,28 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
             if (link.result.range.location != NSNotFound) {
                 NSRange linkRange = link.result.range;
 
-                if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
-                    [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                        [mutableAttributedString removeAttribute:name range:linkRange];
-                    }];
+                if (link != self.attributedTruncationToken) {
+                    if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
+                        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+                            [mutableAttributedString removeAttribute:name range:linkRange];
+                        }];
 
-                    if (attributesToAdd) {
-                        [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
+                        if (attributesToAdd) {
+                            [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
+                        }
+                    }
+                } else {
+                    // Handle truncation token link separately
+                    NSRange truncationTokenRange = NSMakeRange(linkRange.location, mutableAttributedString.length - linkRange.location);
+
+                    if (truncationTokenRange.length > 0) {
+                        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
+                            [mutableAttributedString removeAttribute:name range:truncationTokenRange];
+                        }];
+
+                        if (attributesToAdd) {
+                            [mutableAttributedString addAttributes:attributesToAdd range:truncationTokenRange];
+                        }
                     }
                 }
             }
@@ -1420,6 +1435,8 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
     self.attributedText = mutableAttributedString;
     [self setNeedsDisplay];
 }
+
+
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
