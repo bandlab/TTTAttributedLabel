@@ -1377,16 +1377,13 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
         NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
         NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
 
-        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-            NSRange linkRange = link.result.range;
-            if (NSRangeIsValid(linkRange) && NSMaxRange(linkRange) <= mutableAttributedString.length) {
+        NSRange linkRange = link.result.range;
+        if (linkRange.location != NSNotFound && NSMaxRange(linkRange) <= mutableAttributedString.length) {
+            [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
                 [mutableAttributedString removeAttribute:name range:linkRange];
-            }
-        }];
+            }];
 
-        if (attributesToAdd) {
-            NSRange linkRange = link.result.range;
-            if (NSRangeIsValid(linkRange) && NSMaxRange(linkRange) <= mutableAttributedString.length) {
+            if (attributesToAdd) {
                 [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
             }
         }
@@ -1396,7 +1393,6 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 
     [self setNeedsDisplay];
 }
-
 
 
 - (UIView *)hitTest:(CGPoint)point
