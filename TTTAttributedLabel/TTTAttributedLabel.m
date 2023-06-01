@@ -1366,6 +1366,8 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 }
 
 - (void)tintColorDidChange {
+    [super tintColorDidChange];
+
     if (!self.inactiveLinkAttributes || [self.inactiveLinkAttributes count] == 0) {
         return;
     }
@@ -1373,34 +1375,40 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
     BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
+    NSMutableArray *rangesToRemove = [NSMutableArray array];
+    NSMutableArray *rangesToAdd = [NSMutableArray array];
 
     for (TTTAttributedLabelLink *link in self.linkModels) {
-        NSRange linkRange = link.result.range;
-        if (NSMaxRange(linkRange) > mutableAttributedString.length) {
-            continue; // Skip links with invalid ranges
-        }
-
         NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
         NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
+        NSRange linkRange = link.result.range;
 
-        // Create a new attributed string with modified attributes
-        NSMutableAttributedString *modifiedString = [[NSMutableAttributedString alloc] initWithAttributedString:[mutableAttributedString attributedSubstringFromRange:linkRange]];
-        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-            [modifiedString removeAttribute:name range:NSMakeRange(0, modifiedString.length)];
-        }];
-        if (attributesToAdd) {
-            [modifiedString addAttributes:attributesToAdd range:NSMakeRange(0, modifiedString.length)];
+        if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
+            [rangesToRemove addObject:NSStringFromRange(linkRange)];
+
+            if (attributesToAdd) {
+                [rangesToAdd addObject:@{
+                    @"attributes": attributesToAdd,
+                    @"range": NSStringFromRange(linkRange)
+                }];
+            }
         }
+    }
 
-        // Replace the original link range with the modified attributed string
-        [mutableAttributedString replaceCharactersInRange:linkRange withAttributedString:modifiedString];
+    for (NSString *rangeString in rangesToRemove) {
+        NSRange range = NSRangeFromString(rangeString);
+        [mutableAttributedString removeAttribute:NSForegroundColorAttributeName range:range];
+    }
+
+    for (NSDictionary *rangeAttributes in rangesToAdd) {
+        NSRange range = NSRangeFromString(rangeAttributes[@"range"]);
+        NSDictionary *attributes = rangeAttributes[@"attributes"];
+        [mutableAttributedString addAttributes:attributes range:range];
     }
 
     self.attributedText = mutableAttributedString;
-
     [self setNeedsDisplay];
 }
-
 
 - (UIView *)hitTest:(CGPoint)point
           withEvent:(UIEvent *)event
