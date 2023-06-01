@@ -1366,6 +1366,8 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
 }
 
 - (void)tintColorDidChange {
+    [super tintColorDidChange];
+
     if (!self.inactiveLinkAttributes || [self.inactiveLinkAttributes count] == 0) {
         return;
     }
@@ -1373,69 +1375,32 @@ afterInheritingLabelAttributesAndConfiguringWithBlock:(NSMutableAttributedString
     BOOL isInactive = (self.tintAdjustmentMode == UIViewTintAdjustmentModeDimmed);
 
     NSMutableAttributedString *mutableAttributedString = [self.attributedText mutableCopy];
+    NSAttributedString *truncationToken = self.attributedTruncationToken;
 
-    BOOL hasOtherLinks = NO;
-    for (TTTAttributedLabelLink *link in self.linkModels) {
-        if (link.result.range.location != NSNotFound && link != self.attributedTruncationToken) {
-            hasOtherLinks = YES;
-            break;
-        }
-    }
+    [self.linkModels enumerateObjectsUsingBlock:^(TTTAttributedLabelLink *link, NSUInteger idx, BOOL *stop) {
+        NSRange linkRange = link.result.range;
 
-    if (!hasOtherLinks) {
-        // Handle case when there are no other links except the truncation token
-        NSDictionary *attributesToRemove = isInactive ? self.linkAttributes : self.inactiveLinkAttributes;
-        NSDictionary *attributesToAdd = isInactive ? self.inactiveLinkAttributes : self.linkAttributes;
-
-        NSRange range = NSMakeRange(0, mutableAttributedString.length);
-
-        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-            [mutableAttributedString removeAttribute:name range:range];
-        }];
-
-        if (attributesToAdd) {
-            [mutableAttributedString addAttributes:attributesToAdd range:range];
-        }
-    } else {
-        for (TTTAttributedLabelLink *link in self.linkModels) {
-            NSDictionary *attributesToRemove = isInactive ? link.attributes : link.inactiveAttributes;
-            NSDictionary *attributesToAdd = isInactive ? link.inactiveAttributes : link.attributes;
-
-            if (link.result.range.location != NSNotFound) {
-                NSRange linkRange = link.result.range;
-
-                if (link != self.attributedTruncationToken) {
-                    if (NSMaxRange(linkRange) <= mutableAttributedString.length) {
-                        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                            [mutableAttributedString removeAttribute:name range:linkRange];
-                        }];
-
-                        if (attributesToAdd) {
-                            [mutableAttributedString addAttributes:attributesToAdd range:linkRange];
-                        }
-                    }
-                } else {
-                    // Handle truncation token link separately
-                    NSRange truncationTokenRange = NSMakeRange(linkRange.location, mutableAttributedString.length - linkRange.location);
-
-                    if (truncationTokenRange.length > 0) {
-                        [attributesToRemove enumerateKeysAndObjectsUsingBlock:^(NSString *name, __unused id value, __unused BOOL *stop) {
-                            [mutableAttributedString removeAttribute:name range:truncationTokenRange];
-                        }];
-
-                        if (attributesToAdd) {
-                            [mutableAttributedString addAttributes:attributesToAdd range:truncationTokenRange];
-                        }
-                    }
-                }
+        if (linkRange.location != NSNotFound) {
+            if (isInactive) {
+                [mutableAttributedString addAttributes:link.inactiveAttributes range:linkRange];
+                [mutableAttributedString removeAttribute:NSLinkAttributeName range:linkRange];
+            } else {
+                [mutableAttributedString addAttributes:link.attributes range:linkRange];
             }
+        }
+    }];
+
+    if (truncationToken) {
+        NSRange truncationTokenRange = [mutableAttributedString.string rangeOfString:truncationToken.string];
+        if (truncationTokenRange.location != NSNotFound) {
+            NSDictionary *truncationTokenAttributes = isInactive ? self.inactiveLinkAttributes : self.activeLinkAttributes;
+            [mutableAttributedString addAttributes:truncationTokenAttributes range:truncationTokenRange];
         }
     }
 
     self.attributedText = mutableAttributedString;
     [self setNeedsDisplay];
 }
-
 
 
 - (UIView *)hitTest:(CGPoint)point
